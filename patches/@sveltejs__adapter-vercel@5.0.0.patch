@@ -1,0 +1,53 @@
+diff --git a/index.d.ts b/index.d.ts
+index 6d9f8d359891faee1958db0249ab0052067227b4..ae90b3625aa0340be8d66a02884187e239d1e8f3 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -52,9 +52,9 @@ export interface ServerlessConfig {
+ 				 */
+ 				bypassToken?: string;
+ 				/**
+-				 * List of query string parameter names that will be cached independently. If an empty array, query values are not considered for caching. If undefined each unique query value is cached independently
++				 * List of query string parameter names that will be cached independently. If undefined or an empty array, query values are not considered for caching. If set as '*', each unique query value is cached independently.
+ 				 */
+-				allowQuery?: string[] | undefined;
++				allowQuery?: string[] | '*' | undefined;
+ 		  }
+ 		| false;
+ }
+diff --git a/index.js b/index.js
+index 683df1757073d21217eec5dee8c94e9fa42302b0..e906f84a64e80ed30d511440e6694ff40c464e51 100644
+--- a/index.js
++++ b/index.js
+@@ -147,7 +147,7 @@ const plugin = function (defaults = {}) {
+ 			/** @type {Map<string, string>} */
+ 			const functions = new Map();
+ 
+-			/** @type {Map<import('@sveltejs/kit').RouteDefinition<import('.').Config>, { expiration: number | false, bypassToken: string | undefined, allowQuery: string[], group: number, passQuery: true }>} */
++			/** @type {Map<import('@sveltejs/kit').RouteDefinition<import('.').Config>, { expiration: number | false, bypassToken: string | undefined, allowQuery: string[] | undefined, group: number, passQuery: true }>} */
+ 			const isr_config = new Map();
+ 
+ 			/** @type {Set<string>} */
+@@ -182,7 +182,10 @@ const plugin = function (defaults = {}) {
+ 						);
+ 					}
+ 
+-					if (config.isr.allowQuery?.includes('__pathname')) {
++					if (
++						Array.isArray(config.isr.allowQuery) &&
++						config.isr.allowQuery?.includes('__pathname')
++					) {
+ 						throw new Error(
+ 							`${directory}: \`__pathname\` is a reserved query parameter for \`isr.allowQuery\``
+ 						);
+@@ -191,7 +194,10 @@ const plugin = function (defaults = {}) {
+ 					isr_config.set(route, {
+ 						expiration: config.isr.expiration,
+ 						bypassToken: config.isr.bypassToken,
+-						allowQuery: ['__pathname', ...(config.isr.allowQuery ?? [])],
++						allowQuery:
++							config.isr.allowQuery === '*'
++								? undefined
++								: ['__pathname', ...(config.isr.allowQuery ?? [])],
+ 						group: isr_config.size + 1,
+ 						passQuery: true
+ 					});

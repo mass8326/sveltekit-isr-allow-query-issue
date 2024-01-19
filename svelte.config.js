@@ -6,7 +6,7 @@ const config = {
     adapter: vercel({
       isr: {
         expiration: 60,
-        allowQuery: undefined,
+        allowQuery: "*",
       },
     }),
   },
